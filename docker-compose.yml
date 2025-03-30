@@ -1,0 +1,15 @@
+services:
+  app:
+    image: address-geocoder
+    build: .
+    platform: linux/amd64
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    env_file:
+      - .env
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp

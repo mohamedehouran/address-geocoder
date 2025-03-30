@@ -1,0 +1,34 @@
+# Git Files
+.git
+.gitignore
+.gitattributes
+.github
+README.md
+LICENSE
+
+# Docker Files
+Dockerfile
+docker-compose.yml
+
+# IDE & Editor Config
+.vscode
+
+# Python Bytecode & Cache
+__pycache__/
+*.pyc
+.pytest_cache
+.ruff_cache
+
+# Virtual environmnet & Environment Variables
+.venv
+.env
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+
+# Data Files
+data/
