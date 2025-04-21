@@ -59,8 +59,8 @@ class GeocodingSchema:
             address_type = "addresstype"
 
         class Photon(Enum):
-            latitude = None
-            longitude = None
+            latitude = auto()
+            longitude = auto()
             location_type = "type"
             address_type = "osm_value"
 

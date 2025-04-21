@@ -132,18 +132,26 @@ class InputDataProcessorConfig:
 
     def __post_init__(self):
         self.env_manager = self.app_config.environment_manager
-        self.max_workers = self.env_manager.get_environment_var(
-            self.env_manager.variables.MAX_WORKERS,
-            max(1, multiprocessing.cpu_count() - 1),
+        self.max_workers = int(
+            self.env_manager.get_environment_var(
+                self.env_manager.variables.MAX_WORKERS,
+                max(1, multiprocessing.cpu_count() - 1),
+            )
         )
-        self.chunksize = self.env_manager.get_environment_var(
-            self.env_manager.variables.CHUNKSIZE, 100
+        self.chunksize = int(
+            self.env_manager.get_environment_var(
+                self.env_manager.variables.CHUNKSIZE, 100
+            )
         )
-        self.retry_delay = self.env_manager.get_environment_var(
-            self.env_manager.variables.RETRY_DELAY, 600
+        self.retry_delay = int(
+            self.env_manager.get_environment_var(
+                self.env_manager.variables.RETRY_DELAY, 600
+            )
         )
-        self.max_retry_no = self.env_manager.get_environment_var(
-            self.env_manager.variables.MAX_RETRY_NO, 3
+        self.max_retry_no = int(
+            self.env_manager.get_environment_var(
+                self.env_manager.variables.MAX_RETRY_NO, 3
+            )
         )
 
         validate_positive_value(

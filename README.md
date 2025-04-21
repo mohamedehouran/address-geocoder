@@ -114,7 +114,7 @@ address-geocoder/
    ```
 5. **Run the application** :
    ```bash
-   python -m src.main
+   poetry run python -m src.main
    ```
    - Follow the interactive command-line prompts generated to validate required parameters
 5. **Retrieve the output file** :
