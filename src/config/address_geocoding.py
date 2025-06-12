@@ -2,8 +2,7 @@ import ssl
 import geopy
 import certifi
 from enum import Enum, auto
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
+from typing import Dict, Any
 from geopy.geocoders import Nominatim, Photon, OpenCage
 from src.config.app import AppConfig
 from src.config.config_validator import (
@@ -16,7 +15,7 @@ ctx = ssl.create_default_context(cafile=certifi.where())
 geopy.geocoders.options.default_ssl_context = ctx
 
 
-class GeocodingSchema:
+class GeocodingResponseSchema:
     """
     Standardized field mappings for geocoding service responses and output.
     """
@@ -88,7 +87,7 @@ class GeocodingSchema:
         address_type = auto()
 
 
-class Geocoder(Enum):
+class GeocodingService(Enum):
     """
     Available geocoding services.
     """
@@ -98,17 +97,17 @@ class Geocoder(Enum):
     OPENCAGE = "OpenCage"
 
 
-@dataclass
-class GeocodingService:
+class GeocodingServiceManager:
     """
     Manages the initialization and usage of geocoding services.
     """
 
-    app_config: AppConfig
-    geocoder: Geocoder = Geocoder
-    default_user_agent: str = "address-geocoder"
-    default_delay: float = float(1)
-    opencage_api_key: str = field(init=False)
+    def __init__(self, app_config: AppConfig) -> None:
+        self.app_config = app_config
+        self.default_user_agent = "address-geocoder"
+        self.default_delay = 5
+
+        self.__post_init__()
 
     def __post_init__(self):
         self.env_manager = self.app_config.environment_manager
@@ -141,22 +140,13 @@ class GeocodingService:
         validate_required_vars(
             {self.env_manager.variables.OPENCAGE_API_KEY.value: self.opencage_api_key}
         )
-        validate_geocoder_with_api_key(self.geocoder.OPENCAGE, self.OpenCage)
+        validate_geocoder_with_api_key(GeocodingService.OPENCAGE, self.OpenCage)
 
 
-@dataclass
-class AddressGeocodingConfig:
+class GeocodingResponseFormatter:
     """
-    Configuration class for managing the formatting of geocoding results.
+    Formats geocoding results from various services into a standardized schema.
     """
-
-    geocoding_service: GeocodingService
-    numeric_columns: List[str] = field(
-        default_factory=lambda: [
-            GeocodingSchema.Output.latitude.name,
-            GeocodingSchema.Output.longitude.name,
-        ]
-    )
 
     def _get_nominatim_format_config(self, location: str) -> Dict[str, Any]:
         """
@@ -166,13 +156,15 @@ class AddressGeocodingConfig:
             address = location.raw.get("address", {})
 
             config = {
-                GeocodingSchema.name: address.get(GeocodingSchema.value, "")
-                for GeocodingSchema in GeocodingSchema.Default
+                GeocodingResponseSchema.name: address.get(
+                    GeocodingResponseSchema.value, ""
+                )
+                for GeocodingResponseSchema in GeocodingResponseSchema.Default
             }
             extra_config = {}
 
-            for column in GeocodingSchema.Extra.Nominatim:
-                if column.name in self.numeric_columns:
+            for column in GeocodingResponseSchema.Extra.Nominatim:
+                if column.name in ["latitude", "longitude"]:
                     extra_config[column.name] = float(location.raw.get(column.value, 0))
                 else:
                     extra_config[column.name] = location.raw.get(column.value)
@@ -192,16 +184,18 @@ class AddressGeocodingConfig:
             geometry = location.raw.get("geometry", {})
 
             config = {
-                GeocodingSchema.name: properties.get(GeocodingSchema.value, "")
-                for GeocodingSchema in GeocodingSchema.Photon
+                GeocodingResponseSchema.name: properties.get(
+                    GeocodingResponseSchema.value, ""
+                )
+                for GeocodingResponseSchema in GeocodingResponseSchema.Photon
             }
             extra_config = {}
             coordinates = geometry.get("coordinates", [0, 0])
 
-            for column in GeocodingSchema.Extra.Photon:
-                if column.name == GeocodingSchema.Output.longitude.name:
+            for column in GeocodingResponseSchema.Extra.Photon:
+                if column.name == GeocodingResponseSchema.Output.longitude.name:
                     extra_config[column.name] = float(coordinates[0])
-                elif column.name == GeocodingSchema.Output.latitude.name:
+                elif column.name == GeocodingResponseSchema.Output.latitude.name:
                     extra_config[column.name] = float(coordinates[1])
                 else:
                     extra_config[column.name] = properties.get(column.value)
@@ -221,13 +215,15 @@ class AddressGeocodingConfig:
             geometry = location.raw.get("geometry", {})
 
             config = {
-                GeocodingSchema.name: components.get(GeocodingSchema.value, "")
-                for GeocodingSchema in GeocodingSchema.Default
+                GeocodingResponseSchema.name: components.get(
+                    GeocodingResponseSchema.value, ""
+                )
+                for GeocodingResponseSchema in GeocodingResponseSchema.Default
             }
             extra_config = {}
 
-            for column in GeocodingSchema.Extra.OpenCage:
-                if column.name in self.numeric_columns:
+            for column in GeocodingResponseSchema.Extra.OpenCage:
+                if column.name in ["latitude", "longitude"]:
                     extra_config[column.name] = float(geometry.get(column.value, 0))
                 else:
                     extra_config[column.name] = components.get(column.value)
@@ -238,41 +234,35 @@ class AddressGeocodingConfig:
                 f"Unexpected error occurred retrieving OpenCage format configuration : {e}"
             )
 
-    def get_format_config(self, geocoder: Geocoder, location: str) -> Dict[str, Any]:
+    def get_format_config(self, gs: GeocodingService, location: str) -> Dict[str, Any]:
         """
         Returns a formatted configuration for a geocoded location based on the specified geocoder.
         """
         try:
-            if geocoder == Geocoder.NOMINATIM:
+            if gs == GeocodingService.NOMINATIM:
                 return self._get_nominatim_format_config(location)
-            elif geocoder == Geocoder.PHOTON:
+            elif gs == GeocodingService.PHOTON:
                 return self._get_photon_format_config(location)
-            elif geocoder == Geocoder.OPENCAGE:
+            elif gs == GeocodingService.OPENCAGE:
                 return self._get_opencage_format_config(location)
         except Exception as e:
             raise RuntimeError(
                 f"Unexpected error occurred retrieving format configuration : {e}"
             )
 
-    def apply_format(self, geocoder: Geocoder, address: str, **kwargs) -> None:
+    def apply_format(self, gs: GeocodingService, address: str, **kwargs) -> None:
         """
         Applies the final formatting to the geocoded address data, including raw address and the geocoder's name.
         """
         try:
             final_config = {
                 column.name: kwargs.get(column.name, "")
-                for column in GeocodingSchema.Output
+                for column in GeocodingResponseSchema.Output
             }
             final_config["raw_address"] = address
-            final_config["encoder"] = geocoder.value
+            final_config["encoder"] = gs.value
             return final_config
         except Exception as e:
             raise RuntimeError(
                 f"Unexpected error occurred applying format to the geocoded address data : {e}"
             )
-
-    def get_encoder(self, formatted_location: Dict[str, Any]) -> Optional[str]:
-        """
-        Returns the geocoder used for the formatted location result.
-        """
-        return formatted_location.get("encoder")

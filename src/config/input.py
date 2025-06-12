@@ -1,14 +1,13 @@
 import pandas as pd
 import pandera as pa
-from enum import Enum
 import multiprocessing
+from enum import Enum
+from fastapi import File
 from pathlib import Path
-from typing import Callable
+from io import StringIO, BytesIO
 from dataclasses import dataclass, field
 from src.config.app import AppConfig
 from src.config.config_validator import (
-    validate_required_vars,
-    validate_file_exists,
     validate_value_is_allowed,
     validate_positive_value,
 )
@@ -16,12 +15,12 @@ from src.config.config_validator import (
 
 class InputFileSpecs:
     """
-    Defines the complete specification for input data file.
+    Specifications for input files, including expected column names, validation schema, and supported formats.
     """
 
     class ColumnNames(Enum):
         """
-        Standardized column names for input files.
+        Column names expected in the input DataFrame.
         """
 
         ID = "id"
@@ -29,7 +28,7 @@ class InputFileSpecs:
 
     class ValidationSchema(pa.DataFrameModel):
         """
-        Pandera data validation schema.
+        Pandera schema for validating the input DataFrame structure.
         """
 
         id: str = pa.Field(unique=True, coerce=True)
@@ -37,68 +36,42 @@ class InputFileSpecs:
 
     class SupportedFormats(Enum):
         """
-        Supported file formats with their corresponding pandas readers.
+        Supported file formats for input files.
         """
 
         CSV = "csv"
         PARQUET = "parquet"
 
-        @property
-        def reader(self) -> Callable:
-            """
-            Returns the appropriate pandas reader function for this format.
-            """
-            readers = {
-                InputFileSpecs.SupportedFormats.CSV: pd.read_csv,
-                InputFileSpecs.SupportedFormats.PARQUET: pd.read_parquet,
-            }
-            return readers[self]
 
-
-@dataclass
-class InputFileConfig:
+class InputFileLoader:
     """
-    Handles input file configuration and validation.
+    Loads and validates input files for geocoding, ensuring they conform to expected formats and schemas.
     """
 
-    filename: str
-    file_format: str
-    app_config: AppConfig
-    file_specs: InputFileSpecs = InputFileSpecs
-    file_path: Path = field(init=False)
+    def __init__(
+        self,
+        app_config: AppConfig,
+        file: File,
+    ):
+        self.app_config = app_config
+        self.file = file
 
-    def __post_init__(self):
-        self.dir_manager = self.app_config.directory_manager
-        self.env_manager = self.app_config.environment_manager
-        self.file_path = self._get_input_file_path()
+        self.filename = file.filename.split(".")[0]
+        self.file_format = file.filename.split(".")[1]
+        self.processed_file_path = self._get_processed_file_path()
 
-        self._validate_config()
-
-    def _validate_config(self):
-        """
-        Centralized configuration validation.
-        """
-        validate_required_vars(
-            {self.env_manager.variables.INPUT_FILENAME: self.filename}
-        )
         validate_value_is_allowed(
-            self.file_format, [ff.name for ff in self.file_specs.SupportedFormats]
+            self.file_format, [ff.value for ff in InputFileSpecs.SupportedFormats]
         )
-        validate_file_exists(self.file_path)
 
-    def _get_file_extension(self) -> str:
+    def _get_processed_file_path(self) -> Path:
         """
-        Returns the file extension based on the input file format.
+        Returns the path where the processed file will be saved.
         """
-        return f".{InputFileSpecs.SupportedFormats[self.file_format].value}"
-
-    def _get_input_file_path(self) -> Path:
-        """
-        Returns input file path.
-        """
+        dir_manager = self.app_config.directory_manager
         return (
-            self.dir_manager.get_directory_path(self.dir_manager.directories.INPUT_DATA)
-            / f"{self.filename}{self._get_file_extension()}"
+            dir_manager.get_directory_path(dir_manager.directories.DATA)
+            / f"{self.filename}_processed.csv"
         )
 
     def read_input_file(self) -> pd.DataFrame:
@@ -107,12 +80,22 @@ class InputFileConfig:
         """
 
         try:
-            file_format = self.file_specs.SupportedFormats[self.file_format]
-            df = file_format.reader(self.file_path)
-            df.dropna(inplace=True)
+            content = self.file.file.read()
 
-            # Validate schema
+            if self.file_format == InputFileSpecs.SupportedFormats.CSV.value:
+                df = pd.read_csv(StringIO(content.decode("utf-8")))
+            elif self.file_format == InputFileSpecs.SupportedFormats.PARQUET.value:
+                df = pd.read_parquet(BytesIO(content))
+            else:
+                raise ValueError(f"Unsupported file format: {self.file_format}")
+
+            # Validate the DataFrame against the schema
+            df.dropna(inplace=True)
+            if df.empty:
+                raise ValueError("Input file is empty or contains only NaN values.")
+
             InputFileSpecs.ValidationSchema.validate(df)
+
             return df
         except Exception as e:
             raise IOError(f"Failed to read input file : {e}")
@@ -121,7 +104,7 @@ class InputFileConfig:
 @dataclass
 class InputDataProcessorConfig:
     """
-    Manage configuration for input data processing.
+    Configuration for the input data processor, including settings for parallel processing and retry logic.
     """
 
     app_config: AppConfig

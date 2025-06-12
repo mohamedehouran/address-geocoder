@@ -34,16 +34,6 @@ def validate_positive_value(vars_dict: Dict[str, int]) -> None:
             raise ValueError(f"Invalid value for {key}={val}. Must be greater than 0")
 
 
-def validate_file_exists(file_path: Path) -> None:
-    """
-    Validates that a file exists at the given path.
-    """
-    if not file_path.exists():
-        raise FileNotFoundError(f"Input file '{file_path}' does not exist")
-    if not file_path.is_file():
-        raise FileNotFoundError(f"Input file '{file_path}' is not a file")
-
-
 def validate_dir_exists(directory_path: Path) -> None:
     """
     Validates that a directory exists at the given path.

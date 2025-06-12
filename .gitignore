@@ -19,6 +19,5 @@ Thumbs.db
 logs/
 
 # Data Files
-data/input/*
-!data/input/.gitkeep
-data/output/
+data/*
+!data/.gitkeep

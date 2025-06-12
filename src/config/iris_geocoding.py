@@ -4,7 +4,7 @@ import geopandas as gpd
 from enum import Enum
 from typing import List
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from src.config.app import AppConfig
 from src.config.config_validator import validate_dir_exists
 
@@ -23,25 +23,24 @@ class IrisGeoSchema(Enum):
 
 
 @dataclass(frozen=True)
-class SpatialReference:
+class IrisSpatialReference:
     """
-    Defines the default spatial reference system.
-    """
-
-    crs: str = "EPSG:4326"
-    epsg: int = 4326
-
-
-@dataclass
-class IRISGeocodingConfig:
-    """
-    Configuration class for IRIS geocoding.
+    Spatial reference for IRIS GeoJSON data.
     """
 
-    app_config: AppConfig
-    geo_schema: IrisGeoSchema = IrisGeoSchema
-    spatial_reference: SpatialReference = SpatialReference
-    geojson_dir: Path = field(init=False)
+    CRS: str = "EPSG:4326"
+    EPSG: int = 4326
+
+
+class IrisGeoJsonLoader:
+    """
+    Loads and processes IRIS GeoJSON files into a GeoDataFrame.
+    """
+
+    def __init__(self, app_config: AppConfig) -> None:
+        self.app_config = app_config
+
+        self.__post_init__()
 
     def __post_init__(self):
         self.dir_manager = self.app_config.directory_manager
@@ -70,8 +69,8 @@ class IRISGeocodingConfig:
             for file_path in file_paths:
                 gdf = gpd.read_file(file_path)
 
-                if gdf.crs != self.spatial_reference.crs:
-                    gdf = gdf.to_crs(self.spatial_reference.crs)
+                if gdf.crs != IrisSpatialReference.CRS:
+                    gdf = gdf.to_crs(IrisSpatialReference.CRS)
 
                 geojson_list.append(gdf)
             return geojson_list
@@ -87,7 +86,7 @@ class IRISGeocodingConfig:
         try:
             return gpd.GeoDataFrame(
                 pd.concat(geojson_list, ignore_index=True),
-                crs=self.spatial_reference.crs,
+                crs=IrisSpatialReference.CRS,
             )
         except Exception as e:
             raise RuntimeError(

@@ -20,8 +20,6 @@ class EnvironmentVars(Enum):
     CHUNKSIZE = "CHUNKSIZE"
     MAX_WORKERS = "MAX_WORKERS"
     OPENCAGE_API_KEY = "OPENCAGE_API_KEY"
-    INPUT_FILENAME = "INPUT_FILENAME"
-    INPUT_FILE_FORMAT = "INPUT_FILE_FORMAT"
 
 
 @dataclass(frozen=True)
@@ -54,8 +52,7 @@ class Directories(Enum):
     Directories used by the application.
     """
 
-    INPUT_DATA = "data/input"
-    OUTPUT_DATA = "data/output"
+    DATA = "data"
     LOGS = "logs"
     CONFIG = "src/config/"
 

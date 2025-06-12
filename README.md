@@ -14,9 +14,9 @@ Each request is processed using a fallback strategy, ensuring a response even if
 
 ### Core Capabilities
 - **Optimized parallel processing** : Uses multiple workers to process requests in parallel, reducing latency and improving throughput, ensuring efficient load distribution and API rate-limit compliance
-- **Address geocoding**: Takes raw addresses as input and retrieves their detailled location attributes
-- **Spatial join with IRIS data (French administrative divisions)** (Optional): If enabled, the script perform a spatial join to associate the geocoded locations with predefined IRIS geographical zones, enriching your data with additional context
-- **Structured and readable output**: Results are standardized into a consistent structure, regardless of the geocoding provider used. If IRIS geocoding is enabled, additional fields related to IRIS zones are included
+- **Address geocoding** : Takes raw addresses as input and retrieves their detailled location attributes
+- **Spatial join with IRIS data (French administrative divisions)** (Optional) : If enabled, the script perform a spatial join to associate the geocoded locations with predefined IRIS geographical zones, enriching your data with additional context
+- **Structured and readable output** : Results are standardized into a consistent structure, regardless of the geocoding provider used. If IRIS geocoding is enabled, additional fields related to IRIS zones are included
 
 ### Output Data Structure
 
@@ -73,11 +73,10 @@ address-geocoder/
 │   │   ├── iris_geocoding.py             # IRIS geocoding process
 │   │   └── logger.py                     # Logging configuration
 │   ├── utils/                            # Utility functions
-│   │   ├── address_geocoder.py           # Geocoding functions
-│   │   ├── geocoding_orchestrator.py     # Workflow orchestration
+│   │   ├── geocoder.py                   # Geocoding functions
 │   │   ├── helpers.py                    # General utilities
-│   │   └── iris_geocoding.py             # IRIS-specific utilities
-│   └── main.py                           # Main application script
+│   │   └── orchestrator.py               # Workflow orchestration
+│   └── api.py                            # Main entry point of the FastAPI app
 ├── .env.example                          # Environment variables template
 ├── .gitattributes                        # Git attributes file
 ├── .gitignore                            # Git ignore file
@@ -114,37 +113,34 @@ address-geocoder/
    ```
 5. **Run the application** :
    ```bash
-   poetry run python -m src.main
+   poetry run uvicorn src.api:app --reload
    ```
-   - Follow the interactive command-line prompts generated to validate required parameters
-5. **Retrieve the output file** :
-   - Once the process is complete, the geocoded results will be saved in the data/output/ directory
+   - This command starts the FastAPI application using Uvicorn
+   - Open your browser and go to `http://localhost:8000/docs` to access the interactive API documentation
+6. **Upload your file for geocoding** :
+   - Use the interactive API documentation to upload your file and start the geocoding process.
+7. **Retrieve the output file** :
+   - Once the process is complete, the geocoded results will be available as a downloadable CSV file through the API endpoint
 
 ## ⚙️ Customization
-- **Adjust data processing parameters** in `.env`: Modify the `MAX_WORKERS` or `CHUNKSIZE` values to optimize performance based on your system's capabilities
-- **Add new geocoders** in `src/config/address_geocoding.py`: Extend the list of geocoders and implement provider-specific formatting logic
-- **Modify output format** in `src/config/address_geocoding.py`: Update the `LocationColumns.Output` enum to customize the output fields and structure
-- **Update IRIS data** in `src/config/iris_geojson/`: The project uses IRIS 2021 data by default. You can update this by replacing the files in this directory
+- **Adjust data processing parameters** in `.env` : Modify the `MAX_WORKERS` or `CHUNKSIZE` values to optimize performance based on your system's capabilities
+- **Add new geocoders** in `src/config/address_geocoding.py` : Extend the list of geocoders and implement provider-specific formatting logic
+- **Modify output format** in `src/config/address_geocoding.py` : Update the `GeocodingResponseSchema.Output` enum to customize the output fields and structure
+- **Update IRIS data** in `src/config/iris_geojson/` : The project uses IRIS 2021 data by default. You can update this by replacing the files in this directory
 
 ## 📈 Use Cases
-- **Batch address processing**: Efficiently handle large address datasets
-- **Location intelligence**: Enhance data with precise geographical coordinates
-- **Spatial data enrichment**: Combine with IRIS zones for advanced geographical insights
-- **Address validation**: Verify and standardize address data
-- **GIS integration**: Export standardized location data for GIS applications
+- **Batch address processing** : Efficiently handle large address datasets
+- **Location intelligence** : Enhance data with precise geographical coordinates
+- **Spatial data enrichment** : Combine with IRIS zones for advanced geographical insights
+- **Address validation** : Verify and standardize address data
+- **GIS integration** : Export standardized location data for GIS applications
 
 ## 📝 Third-Party Services & Licenses
-This project integrates with several geocoding services, each with its own terms of service and usage conditions:
+This project integrates with several geocoding services, each with its own terms of service and usage conditions. When using this tool, you must comply with each service's terms of use and attribution requirements.
 
-### Geocoding Services
-- **OpenStreetMap/Nominatim**: Data is © OpenStreetMap contributors and available under the [Open Database License (ODbL)](https://openstreetmap.org/copyright)
-- **Photon**: Powered by OpenStreetMap data, subject to [ODbL](https://openstreetmap.org/copyright)
-- **OpenCage**: Commercial service requiring an API key. Usage is subject to [OpenCage's terms of service](https://opencagedata.com/terms)
-
-### Usage Requirements
-- When using this tool, you must comply with each service's terms of use and attribution requirements
-- For OpenStreetMap data (used by Nominatim and Photon), you must provide attribution to OpenStreetMap contributors
-- If you exceed OpenCage's free tier limits (2,500 requests/day), you will need to subscribe to a paid plan
+- **OpenStreetMap/Nominatim**: Data is © OpenStreetMap contributors and available under the [Open Database License (ODbL)](https://www.openstreetmap.org/copyright)
+- **Photon**: Powered by OpenStreetMap data, subject to [ODbL](https://www.openstreetmap.org/copyright)
+- **OpenCage**: Commercial service requiring an API key. Usage is subject to [OpenCage's terms of service](https://www.opencagedata.com/terms)
 
 ### IRIS Data
 The IRIS geographical data (French administrative divisions) is provided by INSEE and IGN, subject to their respective terms of use and licenses.
