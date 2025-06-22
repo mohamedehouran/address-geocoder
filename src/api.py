@@ -19,7 +19,7 @@ from src.utils.orchestrator import (
 app = FastAPI(
     title="🌍 Address Geocoder",
     description="Address Geocoder is a powerful Python-based solution for geocoding raw addresses. Designed for efficiency and accuracy, it supports batch processing and integrates multiple geocoding services to ensure high reliability. Whether you're working with large datasets or need precise location data, this tool is built to handle your geocoding needs seamlessly.",
-    version="1.0.0",
+    version="0.1.0",
     github="https://github.com/mohamedehouran/address-geocoder/",
 )
 
@@ -35,6 +35,11 @@ async def geocode_file(
     file: UploadFile = File(
         title="Input File",
         description=f"Upload a file containing addresses to be geocoded (Supported formats: {', '.join([ff.value for ff in InputFileSpecs.SupportedFormats])})",
+    ),
+    language: str = Query(
+        default="fr",
+        title="Language of input addresses",
+        description="Specify the language of the input addresses. List of supported languages (case-insensitive) : https://developer.tomtom.com/online-search/online-search-documentation/supported-languages",
     ),
     iris_geocoding: bool = Query(
         default=False,
@@ -56,6 +61,7 @@ async def geocode_file(
             address_geocoder=AddressGeocoder(
                 service_manager=GeocodingServiceManager(app_config=app_config),
                 formatter=GeocodingResponseFormatter(),
+                language=language,
             ),
             iris_geocoding=iris_geocoding,
             iris_geojson_loader=iris_geojson_loader,
@@ -66,6 +72,7 @@ async def geocode_file(
         processor = GeocodingProcessor(deps)
         orchestrator = GeocodingOrchestrator(processor)
         result = orchestrator.execute_geocoding_workflow()
+
         return FileResponse(
             path=result.processed_file_path,
             media_type="text/csv",

@@ -1,31 +1,29 @@
-[tool.poetry]
+[project]
 name = "address-geocoder"
 version = "0.1.0"
 description = "Address Geocoder is a powerful Python-based solution for geocoding raw addresses"
-authors = ["Mohamed Ehouran <mohamedehouran@gmail.com>"]
+authors = [
+  {name = "Mohamed Ehouran", email = "mohamedehouran@gmail.com"},
+]
 readme = "README.md"
-packages = [{include = "src"}]
+requires-python = ">=3.13"
+dependencies = [
+    "click>=8.2.1",
+    "db-dtypes>=1.4.3",
+    "fastapi>=0.115.13",
+    "geopandas>=1.1.0",
+    "geopy>=2.4.1",
+    "numpy>=2.3.1",
+    "pandas>=2.3.0",
+    "pandera>=0.24.0",
+    "pre-commit>=4.2.0",
+    "pyarrow>=20.0.0",
+    "python-multipart>=0.0.20",
+    "uvicorn>=0.34.3",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.12"
-db-dtypes = "1.3.1"
-numpy = "2.2.0"
-pandas = "2.2.3"
-pyarrow = "18.1.0"
-geopy = "2.4.1"
-geopandas = "^1.0.1"
-python-dotenv = "^1.0.1"
-click = "^8.1.8"
-pandera = "^0.23.1"
-pre-commit = "^4.2.0"
-fastapi = "^0.115.12"
-uvicorn = "^0.34.3"
-python-multipart = "^0.0.20"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.4"
-ruff = "^0.9.1"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+    "ruff>=0.12.0",
+]

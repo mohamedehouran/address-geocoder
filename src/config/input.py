@@ -1,6 +1,6 @@
 import pandas as pd
-import pandera as pa
 import multiprocessing
+import pandera.pandas as pa
 from enum import Enum
 from fastapi import File
 from pathlib import Path

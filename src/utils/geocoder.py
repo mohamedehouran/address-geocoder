@@ -40,9 +40,11 @@ class AddressGeocoder:
         self,
         service_manager: GeocodingServiceManager,
         formatter: GeocodingResponseFormatter,
+        language: str = "fr",
     ) -> None:
         self.service_manager = service_manager
         self.formatter = formatter
+        self.language = language
 
     @catch_exceptions
     def _format_result(
@@ -77,12 +79,12 @@ class AddressGeocoder:
                         address,
                         timeout=None,
                         addressdetails=True,
-                        language="fr",
+                        language=self.language,
                         exactly_one=True,
                     )
                 else:
                     location = geocode(
-                        address, timeout=None, language="fr", exactly_one=True
+                        address, timeout=None, language=self.language, exactly_one=True
                     )
 
                 if location:

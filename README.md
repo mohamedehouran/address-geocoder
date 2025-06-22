@@ -50,77 +50,72 @@ Each request is processed using a fallback strategy, ensuring a response even if
 ## 🚀 Getting Started
 
 ### Prerequisites
-1. **Install Python (version 3.12 or higher)** : Follow the official instructions at https://python.org/downloads
+1. **Install Python (version 3.13 or higher)** : Follow the official instructions at https://python.org/downloads
 2. **Obtain an OpenCage API key** : Sign up at https://opencagedata.com/users/sign_up and add your API key to the `.env` file
-3. **Prepare data for geocoding** : 
-   - Prepare a CSV or PARQUET file with exactly 2 columns : 
-      - `id` : unique identifier for each address
-      - `address` : complete address to be geocoded
-   - Place your file in the `data/input/` directory
+3. **Prepare data for geocoding** : Prepare a CSV or PARQUET file with exactly 2 columns : 
+   - `id` : unique identifier for each address
+   - `address` : complete address to be geocoded
 
 ### Project Structure
 ```
 address-geocoder/
-├── data/
-│   └── input/                            # Directory for input CSV files
+├── data/                                 # Input and output data files
 ├── src/
 │   ├── config/                           # Configuration files
-│   │   ├── iris_geojson/                 # IRIS geospatial data
-│   │   ├── address_geocoding.py          # Core address geocoding logic
+│   │   ├── iris_geojson/                 # IRIS geospatial data (GeoJSON files)
+│   │   ├── address_geocoding.py          # Core address geocoding logic and providers
 │   │   ├── app.py                        # Application settings
-│   │   ├── config_validator.py           # Configuration validation
-│   │   ├── input.py                      # Input file handling
+│   │   ├── config_validator.py           # Configuration validation utilities
+│   │   ├── input.py                      # Input file handling and validation
 │   │   ├── iris_geocoding.py             # IRIS geocoding process
 │   │   └── logger.py                     # Logging configuration
 │   ├── utils/                            # Utility functions
 │   │   ├── geocoder.py                   # Geocoding functions
-│   │   ├── helpers.py                    # General utilities
+│   │   ├── helpers.py                    # General-purpose utility functions
 │   │   └── orchestrator.py               # Workflow orchestration
-│   └── api.py                            # Main entry point of the FastAPI app
-├── .env.example                          # Environment variables template
-├── .gitattributes                        # Git attributes file
-├── .gitignore                            # Git ignore file
-├── .pre-commit-config.yaml               # Pre-commit configuration file
+│   └── api.py                            # Main entry point of the FastAPI application
+├── .env.example                          # Example .env file
+├── .gitattributes                        # Git attributes configuration
+├── .gitignore                            # Git ignore rules
+├── .pre-commit-config.yaml               # Pre-commit hooks configuration
+├── .python-version                       # Python version specification
 ├── LICENSE                               # License file
-├── poetry.lock                           # Dependency lock file
-├── pyproject.toml                        # Project configuration with Poetry
-└── README.md
+├── pyproject.toml                        # Project configuration and dependencies
+├── README.md                             # Project documentation
+└── uv.lock                               # Dependency lock file
 ```
 
 ### Quick Start Guide
 1. **Clone the repository** :
-   ```bash
-   git clone https://github.com/mohamedehouran/address-geocoder.git
-   cd address-geocoder
-   ```
+```bash
+git clone https://github.com/mohamedehouran/address-geocoder.git
+cd address-geocoder
+```
 2. **Configure environment variables** :
-   ```bash
-   cp .env.example .env
-   # Edit .env with your settings
-   ```
-4. **Create and activate a virtual environment** : 
-   ```bash
-   python -m venv .venv
+```bash
+cp .env.example .env
+# Edit .env with your settings
+```
+3. **Create and activate a virtual environment** : 
+```bash
+pip install --upgrade uv
+uv venv
 
-   # Activate the environment
-   .venv\Scripts\Activate.ps1    # For Windows
-   source .venv/bin/activate     # For macOS/Linux
-   ```
-5. **Install dependencies** :
-   ```bash
-   pip install --upgrade poetry
-   poetry install
-   ```
-5. **Run the application** :
-   ```bash
-   poetry run uvicorn src.api:app --reload
-   ```
-   - This command starts the FastAPI application using Uvicorn
-   - Open your browser and go to `http://localhost:8000/docs` to access the interactive API documentation
-6. **Upload your file for geocoding** :
-   - Use the interactive API documentation to upload your file and start the geocoding process.
-7. **Retrieve the output file** :
-   - Once the process is complete, the geocoded results will be available as a downloadable CSV file through the API endpoint
+# Activate the environment
+.venv\Scripts\activate        # For Windows
+source .venv/bin/activate     # For macOS/Linux
+
+# Install dependencies
+uv sync
+```
+4. **Run the application** :
+```bash
+uv run uvicorn src.api:app --reload
+```
+- This command starts the FastAPI application using Uvicorn
+- Open your browser and go to `http://localhost:8000/docs` to access the interactive API documentation
+5. **Upload your file for geocoding** : Use the interactive API documentation to upload your file and start the geocoding process
+6. **Retrieve the output file** : Once the process is complete, the geocoded results will be saved in the `data/` directory. You can also download the results as a CSV file through the API endpoint
 
 ## ⚙️ Customization
 - **Adjust data processing parameters** in `.env` : Modify the `MAX_WORKERS` or `CHUNKSIZE` values to optimize performance based on your system's capabilities
@@ -138,15 +133,15 @@ address-geocoder/
 ## 📝 Third-Party Services & Licenses
 This project integrates with several geocoding services, each with its own terms of service and usage conditions. When using this tool, you must comply with each service's terms of use and attribution requirements.
 
-- **OpenStreetMap/Nominatim**: Data is © OpenStreetMap contributors and available under the [Open Database License (ODbL)](https://www.openstreetmap.org/copyright)
-- **Photon**: Powered by OpenStreetMap data, subject to [ODbL](https://www.openstreetmap.org/copyright)
-- **OpenCage**: Commercial service requiring an API key. Usage is subject to [OpenCage's terms of service](https://www.opencagedata.com/terms)
+- **OpenStreetMap/Nominatim** : Data is © OpenStreetMap contributors and available under the [Open Database License (ODbL)](https://www.openstreetmap.org/copyright)
+- **Photon** : Powered by OpenStreetMap data, subject to [ODbL](https://www.openstreetmap.org/copyright)
+- **OpenCage** : Commercial service requiring an API key. Usage is subject to [OpenCage's terms of service](https://www.opencagedata.com/terms)
 
 ### IRIS Data
 The IRIS geographical data (French administrative divisions) is provided by INSEE and IGN, subject to their respective terms of use and licenses.
 
 ## 🤝 Contributing
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome ! Please feel free to submit a Pull Request.
 
 ## 📄 License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
