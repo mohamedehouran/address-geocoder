@@ -1,7 +1,7 @@
 [project]
 name = "address-geocoder"
 version = "0.1.0"
-description = "Address Geocoder is a powerful Python-based solution for geocoding raw addresses"
+description = "FastAPI-based Address Geocoder is a powerful Python-based solution for geocoding raw addresses"
 authors = [
   {name = "Mohamed Ehouran", email = "mohamedehouran@gmail.com"},
 ]
